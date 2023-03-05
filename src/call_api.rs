@@ -107,7 +107,7 @@ fn generate_headers(
 //
 // `data: [DONE]` が送られてきたら読み込みを終了し、ループを抜ける。
 //
-// 送られてきた `choices[0].delta.content` は `response_string`に連結し、最後に返す。
+// 送られてきた `choices[0].delta.content` は `joined_string`に連結し、最後に返す。
 fn print_chat_stream(
     mut response: reqwest::blocking::Response,
 ) -> Result<String, Box<dyn std::error::Error>> {
@@ -150,7 +150,9 @@ fn print_chat_stream(
                         line_length = 0;
                     }
 
-                    // 文字数をプラスする。ユニコード文字は複雑なので気を付ける
+                    // 文字数をプラスする。
+                    // UTF-8文字としてカウントしたいので、chars().count()を使う。
+                    // https://doc.rust-lang.org/std/string/struct.String.html#utf-8
                     line_length += content.chars().count();
 
                     // 100文字に達した場合は改行する
