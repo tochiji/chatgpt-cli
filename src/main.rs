@@ -38,6 +38,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
 
         // APIを呼び出して回答を取得し、履歴に追加
         println!("🤖 ChatGPTからの回答 >");
+
+        // [TODO] エラー時、exitするのではなく、エラー内容を表示してループを継続したい
         let assistant_response = call_api::chatgpt(&openai_token, &message_history)?;
         message_history.push("assistant", &assistant_response);
 

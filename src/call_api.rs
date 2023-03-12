@@ -22,6 +22,8 @@ pub fn chatgpt(
     // 「メッセージ履歴」は全て連結して送る必要がある
     let body = generate_body_from_history(message_history);
 
+    // [TODO] リクエストの前に、トークン数を確認したい
+
     // APIへのリクエストを送信し、responseを受け取る。
     // 文字が順次送られてくるstream形式で受け取る。
     // https://platform.openai.com/docs/api-reference/chat/create#chat/create-stream
@@ -61,6 +63,8 @@ fn send_post_request(
     body: serde_json::Value,
 ) -> Result<reqwest::blocking::Response, Box<dyn std::error::Error>> {
     let client = Client::new();
+
+    // [TODO] if let Errにしてエラーレスポンスの内容を表示したい
     let response = client
         .post(url)
         .headers(headers)
