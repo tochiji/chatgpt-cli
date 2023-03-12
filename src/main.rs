@@ -15,7 +15,7 @@ fn main() {
 fn run() -> Result<(), Box<dyn std::error::Error>> {
     // 必要な環境変数をここで確認
     dotenv().ok();
-    let openai_token = env::var("OPENAI_TOKEN").expect("OPENAI_TOKEN must be set");
+    let openai_token = env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY must be set");
 
     // APIに送るメッセージ履歴
     // ChatGPTへの初期プロンプト、ユーザーからの質問、ChatGPTからの回答が格納される。
