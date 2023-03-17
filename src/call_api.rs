@@ -113,12 +113,12 @@ fn generate_headers(
 //
 // 送られてきた `choices[0].delta.content` は `joined_string`に連結し、最後に返す。
 fn print_chat_stream(
-    mut response: reqwest::blocking::Response,
+    response: reqwest::blocking::Response,
 ) -> Result<String, Box<dyn std::error::Error>> {
     let mut joined_string = String::new();
 
     // レスポンスを読み込むためのリーダーを作成する
-    let reader = BufReader::new(response.by_ref());
+    let reader = BufReader::new(response);
 
     // APIからの回答が横に長い場合は、読みづらいので改行する。
     // ただ、適切な改行を行うためにはTerminalの幅を取得する必要があるため、
