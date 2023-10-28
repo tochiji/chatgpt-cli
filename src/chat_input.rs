@@ -16,7 +16,7 @@ pub fn stdin_to_string() -> Result<String, Box<dyn std::error::Error>> {
                 std::process::exit(0); // Ctrl+Cで終了
             }
             Err(ReadlineError::Eof) => {
-                break;
+                break; // Ctrl+Dで入力を終える
             }
             Err(err) => {
                 println!("Error: {:?}", err);
