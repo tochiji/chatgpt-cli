@@ -50,7 +50,7 @@ fn generate_body_from_history(message_history: &chat_message::MessageHistory) ->
     let body = json!({
         "top_p": 0.5,
         "stream": true, // streamとして受け取る設定
-        "model": "gpt-3.5-turbo-16k",
+        "model": "gpt-4",
         "messages": messages,
     });
     body
