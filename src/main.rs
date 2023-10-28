@@ -35,11 +35,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         // 入力した質問を履歴に追加
         message_history.push("user", &message);
 
-        // 「^D」文字列を削除
-        print!("\x1b[0G\x1b[0K");
-
-        // APIを呼び出して回答を取得し、履歴に追加
-        println!("\n🤖 ChatGPTからの回答 >");
+        println!("🤖 ChatGPTからの回答 >");
 
         // [TODO] エラー時、exitするのではなく、エラー内容を表示してループを継続したい
         let assistant_response = call_api::chatgpt(&openai_token, &message_history)?;
