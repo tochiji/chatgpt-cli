@@ -1,4 +1,8 @@
-use chatgpt_cli::{call_api, chat_input, chat_message};
+use chatgpt_cli::{
+    chat_input,
+    chat_message::{self, Role},
+    chatgpt_client,
+};
 use dotenv::dotenv;
 use std::env;
 
@@ -17,14 +21,13 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     dotenv().ok();
     let openai_token = env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY must be set");
 
-    // APIに送るメッセージ履歴
-    // ChatGPTへの初期プロンプト、ユーザーからの質問、ChatGPTからの回答が格納される。
-    // この履歴を元に、ChatGPTは次の回答を生成する。
-    let mut message_history: chat_message::MessageHistory = chat_message::MessageHistory::new();
+    let mut client = chatgpt_client::ChatGPTClient::new(openai_token);
+    client.select_model()?;
+    let mut messages = chat_message::MessageHistory::default();
 
     // ChatGPTの初期設定を追加
     let system_content = "あなたは親切なアシスタントです。あなたは非常に聡明で、抽象的な説明と具体的な例示が得意です。";
-    message_history.push("system", system_content);
+    messages.push(Role::System, system_content);
 
     // ユーザーからの質問を無限ループで受け付ける
     loop {
@@ -33,15 +36,15 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         let message = chat_input::stdin_to_string()?;
 
         // 入力した質問を履歴に追加
-        message_history.push("user", &message);
+        messages.push(Role::User, &message);
 
         println!("🤖 ChatGPTからの回答 >");
 
         // [TODO] エラー時、exitするのではなく、エラー内容を表示してループを継続したい
-        let assistant_response = call_api::chatgpt(&openai_token, &message_history)?;
-        message_history.push("assistant", &assistant_response);
+        let assistant_response = client.send_messages(&messages)?;
+        messages.push(Role::Assistant, &assistant_response);
 
         // 次の質問との間に空行を入れる
-        println!("");
+        println!();
     }
 }
