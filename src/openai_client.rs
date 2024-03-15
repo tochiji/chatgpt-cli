@@ -4,8 +4,9 @@ use std::{
 };
 
 use crate::{
-    api_response::{ChatCompletionChunk, Models},
-    chat_message,
+    chat_input,
+    chat_message::{self, Role},
+    openai_api_res::{ChatCompletionChunk, Models},
 };
 use requestty::Question;
 use reqwest::blocking::Client;
@@ -24,6 +25,42 @@ impl ChatGPTClient {
             model: None,
             client: Client::new(),
         }
+    }
+
+    pub fn run_chatgpt(&self) -> Result<(), Box<dyn std::error::Error>> {
+        let mut messages = chat_message::MessageHistory::default();
+
+        // ChatGPTの初期設定を追加
+        let system_content = "あなたは親切なアシスタントです。あなたは非常に聡明で、抽象的な説明と具体的な例示が得意です。";
+        messages.push(Role::System, system_content);
+
+        // ユーザーからの質問を無限ループで受け付ける
+        loop {
+            // ユーザーからの入力を受け付ける
+            println!("👤 質問を入力してください。（入力完了時は改行してCtrl+D）>");
+            let message = chat_input::stdin_to_string()?;
+
+            // 入力した質問を履歴に追加
+            messages.push(Role::User, &message);
+
+            println!("🤖 ChatGPTからの回答 >");
+
+            // [TODO] エラー時、exitするのではなく、エラー内容を表示してループを継続したい
+            let assistant_response = self.send_messages(&messages)?;
+            messages.push(Role::Assistant, &assistant_response);
+
+            // 次の質問との間に空行を入れる
+            println!();
+        }
+    }
+
+    pub fn fetch_models(&self) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+        let url = "https://api.openai.com/v1/models";
+        let headers = self.generate_headers()?;
+        let response = self.get_request(url, headers)?;
+        let models: Models = response.json()?;
+        let gpts: Vec<String> = models.get_gpts();
+        Ok(gpts)
     }
 
     pub fn select_model(&mut self) -> Result<(), Box<dyn std::error::Error>> {
@@ -46,6 +83,10 @@ impl ChatGPTClient {
         self.model = Some(model.to_owned());
 
         Ok(())
+    }
+
+    pub fn set_model(&mut self, model: String) {
+        self.model = Some(model);
     }
 
     pub fn send_messages(
