@@ -1,4 +1,6 @@
-pub mod api_response;
 pub mod chat_input;
 pub mod chat_message;
-pub mod chatgpt_client;
+pub mod claude_api_res;
+pub mod claude_client;
+pub mod openai_api_res;
+pub mod openai_client;

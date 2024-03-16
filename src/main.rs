@@ -1,9 +1,6 @@
-use chatgpt_cli::{
-    chat_input,
-    chat_message::{self, Role},
-    chatgpt_client,
-};
+use chatgpt_cli::{claude_client, openai_client};
 use dotenv::dotenv;
+use requestty::Question;
 use std::env;
 
 fn main() {
@@ -20,31 +17,45 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     // 必要な環境変数をここで確認
     dotenv().ok();
     let openai_token = env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY must be set");
+    let anthropic_token = env::var("ANTHROPIC_API_KEY").expect("ANTHROPIC_API_KEY must be set");
 
-    let mut client = chatgpt_client::ChatGPTClient::new(openai_token);
-    client.select_model()?;
-    let mut messages = chat_message::MessageHistory::default();
+    let mut gpt_client = openai_client::ChatGPTClient::new(openai_token);
 
-    // ChatGPTの初期設定を追加
-    let system_content = "あなたは親切なアシスタントです。あなたは非常に聡明で、抽象的な説明と具体的な例示が得意です。";
-    messages.push(Role::System, system_content);
+    // claudeかchatgptかをmodel一覧から選択する
+    let claude_models = vec![
+        "claude-3-opus-20240229",
+        "claude-3-sonnet-20240229",
+        "claude-3-haiku-20240307",
+    ];
+    let openai_models = gpt_client.fetch_models()?;
 
-    // ユーザーからの質問を無限ループで受け付ける
-    loop {
-        // ユーザーからの入力を受け付ける
-        println!("👤 質問を入力してください。（入力完了時は改行してCtrl+D）>");
-        let message = chat_input::stdin_to_string()?;
+    let models: Vec<String> = claude_models
+        .into_iter()
+        .map(|m| m.to_string())
+        .chain(openai_models)
+        .collect();
 
-        // 入力した質問を履歴に追加
-        messages.push(Role::User, &message);
+    let select = Question::select("theme")
+        .should_loop(false)
+        .message("🤖 利用するモデルを選択してください (Ctrl+c to exit)")
+        .choices(models)
+        .default(0)
+        .build();
 
-        println!("🤖 ChatGPTからの回答 >");
+    let answer = requestty::prompt_one(select)?;
+    let model = &answer.as_list_item().unwrap().text;
 
-        // [TODO] エラー時、exitするのではなく、エラー内容を表示してループを継続したい
-        let assistant_response = client.send_messages(&messages)?;
-        messages.push(Role::Assistant, &assistant_response);
-
-        // 次の質問との間に空行を入れる
-        println!();
+    match model.as_str() {
+        "claude-3-opus-20240229" | "claude-3-sonnet-20240229" | "claude-3-haiku-20240307" => {
+            let mut claude_client = claude_client::ClaudeClient::new(anthropic_token);
+            claude_client.set_model(model.to_owned());
+            claude_client.run_claude()?;
+        }
+        _ => {
+            gpt_client.set_model(model.to_owned());
+            gpt_client.run_chatgpt()?;
+        }
     }
+
+    Ok(())
 }

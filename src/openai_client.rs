@@ -60,6 +60,11 @@ impl ChatGPTClient {
         let response = self.get_request(url, headers)?;
         let models: Models = response.json()?;
         let gpts: Vec<String> = models.get_gpts();
+        let gpts: Vec<String> = gpts
+            .iter()
+            .filter(|m| !m.starts_with("ft::"))
+            .map(|m| m.to_string())
+            .collect();
         Ok(gpts)
     }
 
