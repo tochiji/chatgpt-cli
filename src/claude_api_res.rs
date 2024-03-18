@@ -37,7 +37,7 @@ pub struct Message {
     #[serde(rename = "type")]
     message_type: String,
     role: String,
-    content: Vec<String>, // 仮にVec<String>としていますが、実際の構造に合わせてください
+    content: Vec<String>,
     model: String,
     stop_reason: Option<String>,
     stop_sequence: Option<String>,

@@ -62,7 +62,7 @@ impl ChatGPTClient {
         let gpts: Vec<String> = models.get_gpts();
         let gpts: Vec<String> = gpts
             .iter()
-            .filter(|m| !m.starts_with("ft::"))
+            .filter(|m| !m.starts_with("ft:"))
             .map(|m| m.to_string())
             .collect();
         Ok(gpts)

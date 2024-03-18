@@ -44,9 +44,10 @@ $ cargo install --path .
 ```
 
 ## OpenAI API Keyのセット
-環境変数 `OPENAI_API_KEY` にOpenAIのAPI Keyをセットした上で、`chatgpt-cli` を実行してください。
+環境変数 `OPENAI_API_KEY` と `ANTHROPIC_API_KEY` セットした上で、`chatgpt-cli` を実行してください。
 
 ```console
 export OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+export ANTHROPIC_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
