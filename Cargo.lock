@@ -3,6 +3,19 @@
 version = 3
 
 [[package]]
+name = "aichat-cli"
+version = "1.0.0"
+dependencies = [
+ "anyhow",
+ "dotenv",
+ "requestty",
+ "reqwest",
+ "rustyline",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "anyhow"
 version = "1.0.81"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -55,19 +68,6 @@ name = "cfg-if"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
-
-[[package]]
-name = "chatgpt-cli"
-version = "2.0.0"
-dependencies = [
- "anyhow",
- "dotenv",
- "requestty",
- "reqwest",
- "rustyline",
- "serde",
- "serde_json",
-]
 
 [[package]]
 name = "clipboard-win"
