@@ -1,7 +1,8 @@
+use anyhow::Result;
 use rustyline::{error::ReadlineError, DefaultEditor};
 
 // 標準入力から複数行の文字列を読み込む関数
-pub fn stdin_to_string() -> Result<String, Box<dyn std::error::Error>> {
+pub fn stdin_to_string() -> Result<String> {
     let mut rl = DefaultEditor::new()?; // rustylineのインスタンスを作成
 
     let mut buffer = String::new(); // 読み込んだ文字列を格納するためのバッファを作成
@@ -13,10 +14,12 @@ pub fn stdin_to_string() -> Result<String, Box<dyn std::error::Error>> {
                 buffer.push('\n'); // 改行をバッファに追加
             }
             Err(ReadlineError::Interrupted) => {
-                std::process::exit(0); // Ctrl+Cで終了
+                // Ctrl+Cで終了
+                std::process::exit(0);
             }
             Err(ReadlineError::Eof) => {
-                break; // Ctrl+Dで入力を終える
+                // Ctrl+Dで入力を終える
+                break;
             }
             Err(err) => {
                 println!("Error: {:?}", err);

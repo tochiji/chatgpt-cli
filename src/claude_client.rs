@@ -12,6 +12,8 @@ use crate::{
     chat_input,
     chat_message::{self, Role},
     claude_api_res::ClaudeEvent,
+    model::Campany,
+    model::Model,
 };
 
 pub struct ClaudeClient {
@@ -33,9 +35,24 @@ impl ClaudeClient {
         self.model = Some(model);
     }
 
-    pub fn run_claude(&self) -> Result<(), Box<dyn std::error::Error>> {
-        let mut messages = chat_message::MessageHistory::default();
+    pub fn get_model_list(&self) -> Vec<Model> {
+        vec![
+            Model {
+                name: "claude-3-opus-20240229".to_string(),
+                campany: Campany::Claude,
+            },
+            Model {
+                name: "claude-3-sonnet-20240229".to_string(),
+                campany: Campany::Claude,
+            },
+            Model {
+                name: "claude-3-haiku-20240307".to_string(),
+                campany: Campany::Claude,
+            },
+        ]
+    }
 
+    pub fn run_claude(&self, mut messages: chat_message::MessageHistory) -> Result<()> {
         // ユーザーからの質問を無限ループで受け付ける
         loop {
             // ユーザーからの入力を受け付ける

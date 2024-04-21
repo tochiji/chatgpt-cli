@@ -1,26 +1,27 @@
-# chatgpt-cli
+# aichat-cli
 
-ChatGPTのChat APIを呼び出します。
+ChatGPT/ClaudeのChat APIを呼び出します。
 
 https://platform.openai.com/docs/api-reference/chat/create
 
 ```console
-$ chatgpt-cli 
+$ aichat-cli 
 
-? 🤖 ChatGPTのモデルを選択してください (Ctrl+c to exit) › 
-❯ gpt-3.5-turbo-1106
+? 🤖 利用するモデルを選択してください (Ctrl+c to exit) › 
+❯ claude-3-opus-20240229
+  claude-3-sonnet-20240229
+  claude-3-haiku-20240307
+  gpt-4-turbo-2024-04-09
+  gpt-4-turbo
+  gpt-4-1106-vision-preview
+  gpt-3.5-turbo-0125
+  gpt-4-turbo-preview
+  gpt-4-0125-preview
+  gpt-3.5-turbo-1106
   gpt-4-1106-preview
   gpt-4-vision-preview
   gpt-3.5-turbo-instruct-0914
   gpt-3.5-turbo-instruct
-  gpt-4
-  gpt-4-0314
-  gpt-4-0613
-  gpt-3.5-turbo-0613
-  gpt-3.5-turbo-16k-0613
-  gpt-3.5-turbo-16k
-  gpt-3.5-turbo-0301
-  gpt-3.5-turbo
 
 👤 質問を入力してください。（入力完了時は改行してCtrl+D）>
 あなたは誰ですか？
@@ -32,7 +33,7 @@ $ chatgpt-cli
 
 ```
 
-対話型でChatGPTと会話ができます。
+対話型でAIと会話ができます。
 
 
 ## Installation

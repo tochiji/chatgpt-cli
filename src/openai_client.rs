@@ -3,9 +3,12 @@ use std::{
     usize::MAX,
 };
 
+use anyhow::Result;
+
 use crate::{
     chat_input,
-    chat_message::{self, Role},
+    chat_message::{self, MessageHistory, Role},
+    model::Model,
     openai_api_res::{ChatCompletionChunk, Models},
 };
 use requestty::Question;
@@ -27,13 +30,7 @@ impl ChatGPTClient {
         }
     }
 
-    pub fn run_chatgpt(&self) -> Result<(), Box<dyn std::error::Error>> {
-        let mut messages = chat_message::MessageHistory::default();
-
-        // ChatGPTの初期設定を追加
-        let system_content = "あなたは親切なアシスタントです。あなたは非常に聡明で、抽象的な説明と具体的な例示が得意です。";
-        messages.push(Role::System, system_content);
-
+    pub fn run_chatgpt(&self, mut messages: MessageHistory) -> Result<()> {
         // ユーザーからの質問を無限ループで受け付ける
         loop {
             // ユーザーからの入力を受け付ける
@@ -54,7 +51,7 @@ impl ChatGPTClient {
         }
     }
 
-    pub fn fetch_models(&self) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+    pub fn fetch_models(&self) -> Result<Vec<Model>> {
         let url = "https://api.openai.com/v1/models";
         let headers = self.generate_headers()?;
         let response = self.get_request(url, headers)?;
@@ -65,10 +62,19 @@ impl ChatGPTClient {
             .filter(|m| !m.starts_with("ft:"))
             .map(|m| m.to_string())
             .collect();
-        Ok(gpts)
+
+        let models: Vec<Model> = gpts
+            .into_iter()
+            .map(|m| Model {
+                name: m,
+                campany: crate::model::Campany::OpenAI,
+            })
+            .collect();
+
+        Ok(models)
     }
 
-    pub fn select_model(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn select_model(&mut self) -> Result<()> {
         let url = "https://api.openai.com/v1/models";
         let headers = self.generate_headers()?;
         let response = self.get_request(url, headers)?;
@@ -94,10 +100,7 @@ impl ChatGPTClient {
         self.model = Some(model);
     }
 
-    pub fn send_messages(
-        &self,
-        message_history: &chat_message::MessageHistory,
-    ) -> Result<String, Box<dyn std::error::Error>> {
+    pub fn send_messages(&self, message_history: &chat_message::MessageHistory) -> Result<String> {
         let url = "https://api.openai.com/v1/chat/completions";
         let headers = self.generate_headers()?;
         let body = self.generate_body_from_history(message_history);
@@ -133,7 +136,7 @@ impl ChatGPTClient {
         &self,
         url: &str,
         headers: reqwest::header::HeaderMap,
-    ) -> Result<reqwest::blocking::Response, Box<dyn std::error::Error>> {
+    ) -> Result<reqwest::blocking::Response> {
         let res = self.client.get(url).headers(headers).send()?;
 
         Ok(res)
@@ -144,7 +147,7 @@ impl ChatGPTClient {
         url: &str,
         headers: reqwest::header::HeaderMap,
         body: serde_json::Value,
-    ) -> Result<reqwest::blocking::Response, Box<dyn std::error::Error>> {
+    ) -> Result<reqwest::blocking::Response> {
         let res = self
             .client
             .post(url)
@@ -157,7 +160,7 @@ impl ChatGPTClient {
     }
 
     // APIを呼び出すのに必要なヘッダーを生成する
-    fn generate_headers(&self) -> Result<reqwest::header::HeaderMap, Box<dyn std::error::Error>> {
+    fn generate_headers(&self) -> Result<reqwest::header::HeaderMap> {
         let mut headers = reqwest::header::HeaderMap::new();
         headers.insert(
             "Content-Type",
@@ -192,10 +195,7 @@ impl ChatGPTClient {
     // `data: [DONE]` が送られてきたら読み込みを終了し、ループを抜ける。
     //
     // 送られてきた `choices[0].delta.content` は `joined_string`に連結し、最後に返す。
-    fn print_chat_stream(
-        &self,
-        response: reqwest::blocking::Response,
-    ) -> Result<String, Box<dyn std::error::Error>> {
+    fn print_chat_stream(&self, response: reqwest::blocking::Response) -> Result<String> {
         let mut joined_string = String::new();
 
         // レスポンスを読み込むためのリーダーを作成する

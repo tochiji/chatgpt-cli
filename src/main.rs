@@ -1,10 +1,22 @@
-use chatgpt_cli::{claude_client, openai_client};
+use aichat_cli::{
+    chat_message::{self, Role},
+    claude_client,
+    model::{Campany, Model},
+    openai_client,
+};
+use anyhow::Result;
 use dotenv::dotenv;
 use requestty::Question;
 use std::env;
 
 fn main() {
-    match run() {
+    // コマンドライン引数を取得
+    let args: Vec<String> = env::args().collect();
+
+    // -t オプションが指定されているかどうかを確認
+    let is_translation_mode = args.contains(&"-t".to_string());
+
+    match run(is_translation_mode) {
         Ok(_) => {}
         Err(e) => {
             eprintln!("error: {}", e);
@@ -13,49 +25,76 @@ fn main() {
     };
 }
 
-fn run() -> Result<(), Box<dyn std::error::Error>> {
+fn run(is_translation_mode: bool) -> Result<()> {
     // 必要な環境変数をここで確認
     dotenv().ok();
-    let openai_token = env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY must be set");
-    let anthropic_token = env::var("ANTHROPIC_API_KEY").expect("ANTHROPIC_API_KEY must be set");
+    let openai_token =
+        env::var("OPENAI_API_KEY").expect("環境変数にOPENAI_API_KEYをセットしてください");
+    let anthropic_token =
+        env::var("ANTHROPIC_API_KEY").expect("環境変数にANTHROPIC_API_KEYをセットしてください");
+
+    if is_translation_mode {
+        println!("📖 翻訳モードで起動します");
+    }
 
     let mut gpt_client = openai_client::ChatGPTClient::new(openai_token);
+    let mut claude_client = claude_client::ClaudeClient::new(anthropic_token);
 
-    // claudeかchatgptかをmodel一覧から選択する
-    let claude_models = vec![
-        "claude-3-opus-20240229",
-        "claude-3-sonnet-20240229",
-        "claude-3-haiku-20240307",
-    ];
-    let openai_models = gpt_client.fetch_models()?;
+    // ユーザーにモデルを選択させる
+    let selected_model = select_model_input(&claude_client, &gpt_client)?;
 
-    let models: Vec<String> = claude_models
-        .into_iter()
-        .map(|m| m.to_string())
-        .chain(openai_models)
-        .collect();
+    // 初期メッセージを追加
+    let mut messages = chat_message::MessageHistory::default();
 
-    let select = Question::select("theme")
-        .should_loop(false)
-        .message("🤖 利用するモデルを選択してください (Ctrl+c to exit)")
-        .choices(models)
-        .default(0)
-        .build();
+    match selected_model.campany {
+        Campany::Claude => {
+            claude_client.set_model(selected_model.name.to_owned());
 
-    let answer = requestty::prompt_one(select)?;
-    let model = &answer.as_list_item().unwrap().text;
-
-    match model.as_str() {
-        "claude-3-opus-20240229" | "claude-3-sonnet-20240229" | "claude-3-haiku-20240307" => {
-            let mut claude_client = claude_client::ClaudeClient::new(anthropic_token);
-            claude_client.set_model(model.to_owned());
-            claude_client.run_claude()?;
+            if is_translation_mode {
+                let initial_message = "system: このユーザーは翻訳を求めています。与えられた文章が日本語なら英訳を出力し、英語なら日本語訳を出力してください";
+                messages.push(Role::User, initial_message);
+                messages.push(
+                    Role::Assistant,
+                    "はい、承知しました。ここからは翻訳モードで応対します。",
+                );
+            }
+            claude_client.run_claude(messages)?;
         }
-        _ => {
-            gpt_client.set_model(model.to_owned());
-            gpt_client.run_chatgpt()?;
+        Campany::OpenAI => {
+            gpt_client.set_model(selected_model.name.to_owned());
+
+            if is_translation_mode {
+                let initial_message = "このユーザーは翻訳を求めています。与えられた文章が日本語なら英訳を出力し、英語なら日本語訳を出力してください";
+                messages.push(Role::System, initial_message);
+            }
+
+            gpt_client.run_chatgpt(messages)?;
         }
     }
 
     Ok(())
+}
+
+/// ユーザーにモデルを選択させる
+fn select_model_input(
+    claude_client: &claude_client::ClaudeClient,
+    gpt_client: &openai_client::ChatGPTClient,
+) -> Result<Model, anyhow::Error> {
+    let claude_models = claude_client.get_model_list();
+    let openai_models = gpt_client.fetch_models()?;
+    let models: Vec<Model> = claude_models
+        .iter()
+        .chain(openai_models.iter())
+        .cloned()
+        .collect();
+    let select = Question::select("theme")
+        .should_loop(false)
+        .message("🤖 利用するモデルを選択してください (Ctrl+c to exit)")
+        .choices(models.clone())
+        .default(0)
+        .build();
+    let answer = requestty::prompt_one(select)?;
+    let model_index = &answer.as_list_item().unwrap().index;
+    let model = models[*model_index].clone();
+    Ok(model.to_owned())
 }
