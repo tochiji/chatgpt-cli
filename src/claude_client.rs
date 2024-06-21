@@ -38,6 +38,10 @@ impl ClaudeClient {
     pub fn get_model_list(&self) -> Vec<Model> {
         vec![
             Model {
+                name: "claude-3-5-sonnet-20240620".to_string(),
+                campany: Campany::Claude,
+            },
+            Model {
                 name: "claude-3-opus-20240229".to_string(),
                 campany: Campany::Claude,
             },
