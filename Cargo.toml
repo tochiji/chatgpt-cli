@@ -6,10 +6,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-reqwest = { version = "0.11.13", default-features = false, features = [
+reqwest = { version = "0.11", default-features = false, features = [
   "blocking",
   "multipart",
-  "rustls-tls",
+  "native-tls",
   "json",
 ] }
 serde = { version = "1.0", features = ["derive"] }

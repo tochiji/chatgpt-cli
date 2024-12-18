@@ -122,7 +122,6 @@ impl ClaudeClient {
 
         json!({
             "stream": true,
-            "max_tokens": 4096,
             "model": model,
             "messages": messages,
         })

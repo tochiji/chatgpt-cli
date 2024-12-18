@@ -139,7 +139,14 @@ impl ChatGPTClient {
     ) -> Result<reqwest::blocking::Response> {
         let res = self.client.get(url).headers(headers).send()?;
 
-        Ok(res)
+        if res.status().is_success() {
+            Ok(res)
+        } else {
+            Err(anyhow::anyhow!(
+                "failed to send GET request: {}",
+                res.text()?
+            ))
+        }
     }
 
     fn send_post_request(
@@ -148,15 +155,16 @@ impl ChatGPTClient {
         headers: reqwest::header::HeaderMap,
         body: serde_json::Value,
     ) -> Result<reqwest::blocking::Response> {
-        let res = self
-            .client
-            .post(url)
-            .headers(headers)
-            .json(&body)
-            .send()?
-            .error_for_status()?;
+        let res = self.client.post(url).headers(headers).json(&body).send()?;
 
-        Ok(res)
+        if res.status().is_success() {
+            Ok(res)
+        } else {
+            Err(anyhow::anyhow!(
+                "failed to send POST request: {}",
+                res.text()?
+            ))
+        }
     }
 
     // APIを呼び出すのに必要なヘッダーを生成する

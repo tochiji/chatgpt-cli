@@ -33,7 +33,12 @@ pub struct Models {
 
 impl Models {
     pub fn get_gpts(&self) -> Vec<String> {
-        let mut filterd: Vec<&Model> = self.data.iter().filter(|m| m.id.contains("gpt-")).collect();
+        // gpt-から始まるか、oから始まるか
+        let mut filterd: Vec<&Model> = self
+            .data
+            .iter()
+            .filter(|m| m.id.contains("gpt-") || m.id.contains("o"))
+            .collect();
         filterd.sort_by_key(|m| m.created);
         filterd.reverse();
         filterd.iter().map(|m| m.id.clone()).collect()
