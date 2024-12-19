@@ -1,7 +1,4 @@
-use std::{
-    io::{stdout, BufRead, BufReader, Write},
-    usize::MAX,
-};
+use std::io::{stdout, BufRead, BufReader, Write};
 
 use anyhow::{anyhow, Result};
 
@@ -198,7 +195,7 @@ impl ClaudeClient {
         // ただ、適切な改行を行うためにはTerminalの幅を取得する必要があるため、
         // 現状はMAXを仮で設定し、実質的に途中の強制改行が発生しないようにしている。
         let mut line_length = 0;
-        let max_line_length = MAX;
+        let max_line_length = usize::MAX;
 
         // レスポンスの各行を処理する
         for line in reader.lines() {

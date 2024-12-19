@@ -53,7 +53,7 @@ pub struct Model {
     pub owned_by: String,
 }
 
-// 下記のようなデータが返ってくる
+// ストリーミングでは、下記のようなデータが返ってくる
 //
 // ```
 // data: {"id":"chatcmpl-6qPcoOfhzpOdqX9iqRazRUQyjQ2fm","object":"chat.completion.chunk","created":1677949578,"model":"gpt-3.5-turbo-0301","choices":[{"delta":{"role":"assistant"},"index":0,"finish_reason":null}]}
@@ -69,16 +69,16 @@ pub struct Model {
 // data: [DONE]
 // ```
 #[derive(Debug, Deserialize)]
-pub struct ChatCompletionChunk {
+pub struct ChatCompletionStreamChunk {
     pub id: String,
     pub object: String,
     pub created: u64,
     pub model: String,
-    pub choices: Vec<Choice>,
+    pub choices: Vec<StreamChoice>,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct Choice {
+pub struct StreamChoice {
     pub delta: Delta,
     pub index: u64,
     pub finish_reason: Option<String>,
@@ -88,4 +88,37 @@ pub struct Choice {
 pub struct Delta {
     pub content: Option<String>,
     pub role: Option<String>,
+}
+
+// 非ストリーミングでは、下記のようなデータが返ってくる
+//
+// ```json
+// {
+//   "id": "chatcmpl-6qPcoOfhzpOdqX9iqRazRUQyjQ2fm",
+//   "object": "chat.completion",
+//   "created": 1677949578,
+//   "model": "gpt-3.5-turbo-0301",
+//   "choices": [{"message":{"role":"assistant","content":"されます"},"finish_reason":"stop","index":0}]
+// }
+// ```
+#[derive(Debug, Deserialize)]
+pub struct ChatCompletionResponse {
+    pub id: String,
+    pub object: String,
+    pub created: u64,
+    pub model: String,
+    pub choices: Vec<Choice>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Choice {
+    pub index: u64,
+    pub message: Message,
+    pub finish_reason: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Message {
+    pub role: String,
+    pub content: String,
 }

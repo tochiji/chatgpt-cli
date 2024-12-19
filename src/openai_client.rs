@@ -1,15 +1,12 @@
-use std::{
-    io::{stdout, BufRead, BufReader, Write},
-    usize::MAX,
-};
+use std::io::{stdout, BufRead, BufReader, Write};
 
 use anyhow::Result;
 
 use crate::{
     chat_input,
     chat_message::{self, MessageHistory, Role},
-    model::Model,
-    openai_api_res::{ChatCompletionChunk, Models},
+    model::{Campany, Model},
+    openai_api_res::{ChatCompletionResponse, ChatCompletionStreamChunk, Models},
 };
 use requestty::Question;
 use reqwest::blocking::Client;
@@ -17,7 +14,7 @@ use serde_json::json;
 
 pub struct ChatGPTClient {
     openai_token: String,
-    model: Option<String>,
+    model: Option<Model>,
     client: Client,
 }
 
@@ -91,12 +88,15 @@ impl ChatGPTClient {
 
         let answer = requestty::prompt_one(select)?;
         let model = &answer.as_list_item().unwrap().text;
-        self.model = Some(model.to_owned());
+        self.model = Some(Model {
+            name: model.to_owned(),
+            campany: Campany::OpenAI,
+        });
 
         Ok(())
     }
 
-    pub fn set_model(&mut self, model: String) {
+    pub fn set_model(&mut self, model: Model) {
         self.model = Some(model);
     }
 
@@ -105,9 +105,18 @@ impl ChatGPTClient {
         let headers = self.generate_headers()?;
         let body = self.generate_body_from_history(message_history);
         let response = self.send_post_request(url, headers, body)?;
-        let joined_string = self.print_chat_stream(response)?;
-        println!();
-        Ok(joined_string)
+
+        // もしモデルの名前が「o」から始まる場合は、ストリームに対応していないので、非ストリームで処理する
+        if self.model.as_ref().unwrap().name.starts_with("o") {
+            let content = self.print_chat_no_stream(response)?;
+            println!();
+            Ok(content)
+        } else {
+            // ストリームの結果を連結して返す
+            let joined_content = self.print_chat_stream(response)?;
+            println!();
+            Ok(joined_content)
+        }
     }
 
     // APIへ送信するbodyを作成する。
@@ -122,14 +131,22 @@ impl ChatGPTClient {
             .map(|m| json!({"role": m.role.to_string(), "content": m.content}))
             .collect::<Vec<_>>();
 
-        let model = self.model.as_ref().unwrap();
+        let model_name = self.model.as_ref().unwrap().name.clone();
 
-        json!({
+        let mut json = json!({
             "top_p": 0.5,
             "stream": true,
-            "model": model,
+            "model": model_name,
             "messages": messages,
-        })
+        });
+
+        // o1やo1-miniなどはtop_pとstreamに対応していないので、削除
+        if model_name.starts_with("o") {
+            json.as_object_mut().unwrap().remove("top_p");
+            json.as_object_mut().unwrap().remove("stream");
+        }
+
+        json
     }
 
     fn get_request(
@@ -213,7 +230,7 @@ impl ChatGPTClient {
         // ただ、適切な改行を行うためにはTerminalの幅を取得する必要があるため、
         // 現状はMAXを仮で設定し、実質的に途中の強制改行が発生しないようにしている。
         let mut line_length = 0;
-        let max_line_length = MAX;
+        let max_line_length = usize::MAX;
 
         // レスポンスの各行を処理する
         for line in reader.lines() {
@@ -226,7 +243,7 @@ impl ChatGPTClient {
 
             // "data: "で始まる各行を処理する
             if let Some(data) = line.strip_prefix("data: ") {
-                let chunk: ChatCompletionChunk = serde_json::from_str(data.trim())?;
+                let chunk: ChatCompletionStreamChunk = serde_json::from_str(data.trim())?;
 
                 // 選択肢の各要素を処理する
                 for choice in chunk.choices {
@@ -261,6 +278,16 @@ impl ChatGPTClient {
         }
 
         Ok(joined_string)
+    }
+
+    fn print_chat_no_stream(&self, response: reqwest::blocking::Response) -> Result<String> {
+        let mut content = String::new();
+        let response: ChatCompletionResponse = response.json()?;
+        for choice in response.choices {
+            content.push_str(&choice.message.content);
+        }
+        println!("{}", content);
+        Ok(content)
     }
 }
 
